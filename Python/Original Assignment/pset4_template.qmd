@@ -1,0 +1,587 @@
+---
+title: "Pset 4 LL MM"
+format: 
+  pdf:
+    keep-tex: true
+    include-in-header: 
+       text: |
+         \usepackage{fvextra}
+         \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+include-before-body:
+  text: |
+    \RecustomVerbatimEnvironment{verbatim}{Verbatim}{
+      showspaces = false,
+      showtabs = false,
+      breaksymbolleft={},
+      breaklines
+    }
+---
+
+**PS4:** Due Sat Nov 2 at 5:00PM Central. Worth 100 points. 
+We use (`*`) to indicate a problem that we think might be time consuming. 
+    
+## Style Points (10 pts) 
+Please refer to the minilesson on code style
+**[here](https://uchicago.zoom.us/rec/share/pG_wQ-pHTQrJTmqNn4rcrw5V194M2H2s-2jdy8oVhWHkd_yZt9o162IWurpA-fxU.BIQlSgZLRYctvzp-)**.
+
+## Submission Steps (10 pts)
+1. This problem set is a paired problem set.
+2. Play paper, scissors, rock to determine who goes first. Call that person *Partner 1*.
+    - Partner 1 Lauren Laine, llaine:
+    - Partner 2 (Mohamed, cnet ID: shahim143 ):
+3. Partner 1 will accept the `ps4` and then share the link it creates with their partner. You can only share it with one partner so you will not be able to change it after your partner has accepted. 
+4. "This submission is our work alone and complies with the 30538 integrity policy." Add your initials to indicate your agreement: LL MM
+5. "I have uploaded the names of anyone else other than my partner and I worked with on the problem set **[here](https://docs.google.com/forms/d/185usrCREQaUbvAXpWhChkjghdGgmAZXA3lPWpXLLsts/edit)**"  (1 point)
+6. Late coins used this pset: \*\*\_\_\*\* Late coins left after submission: \*\*\_\_\*\*
+7. Knit your `ps4.qmd` to an PDF file to make `ps4.pdf`, 
+    * The PDF should not be more than 25 pages. Use `head()` and re-size figures when appropriate. 
+8. (Partner 1): push  `ps4.qmd` and `ps4.pdf` to your github repo.
+9. (Partner 1): submit `ps4.pdf` via Gradescope. Add your partner on Gradescope.
+10. (Partner 1): tag your submission in Gradescope
+
+**Important:** Repositories are for tracking code. **Do not commit the data or shapefiles to your repo.** The best way to do this is with `.gitignore`, which we have covered in class. If you do accidentally commit the data, Github has a [guide](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github#removing-files-from-a-repositorys-history). The best course of action depends on whether you have pushed yet. This also means that both partners will have to download the initial raw data and any data cleaning code will need to be re-run on both partners' computers. 
+
+
+
+
+
+## Download and explore the Provider of Services (POS) file (10 pts)
+
+1. 
+I pulled
+PRVDR_CTGRY_CD: provider category
+PRVDR_CTGRY_SBTYP_CD: provider category subtype
+PRVDR_NUM: CMS provider certification number
+PGM_TRMNTN_CD: termination Code 
+FAC_NAME: facility name
+ZIP_CD: facility zip code
+
+2. 
+    a.
+    
+```{python}
+#import libraries
+import pandas as pd
+import altair as alt
+import shapely
+from shapely import Polygon, Point
+```
+
+```{python}
+#set directory
+directory=r"C:\Users\laine\OneDrive\Documents\GitHub\Lauren-Laine\Data"
+pos2016=pd.read_csv(directory+r"\pos2016.csv")
+```
+
+```{python}
+short_term_hos_2016=pos2016[pos2016['PRVDR_CTGRY_CD']==1]
+short_term_hos_2016=short_term_hos_2016[short_term_hos_2016['PRVDR_CTGRY_SBTYP_CD']==1]
+short_term_hos_2016['year']=2016
+print(len(short_term_hos_2016))
+```
+There are 7245 hospitals reported in this data. This seems very low.
+    b.
+ The Kaiser Family Foundation article reports that "here are nearly 5,000 short-term, acute care hospitals in the United States". That estimate may be smaller because they are filtering down even further to acute care hospitals. 
+
+Definitive Healthcare reports 3,873 short term acute care hospitals as of April 2024. That estimate is much lower than the estimate from the 2016 data. There may have been many hospital closures since 2016 but it seems unlikely that the number of short term hospitals would decrease by almost 50%. 
+
+Kaiser Family Foundation article: https://www.kff.org/report-section/a-look-at-rural-hospital-closures-and-implications-for-access-to-care-three-case-studies-issue-brief/ 
+
+Definitive Healthcare article: https://www.definitivehc.com/blog/how-many-hospitals-are-in-the-us 
+
+3. 
+```{python}
+# import and subset pos2017
+pos2017=pd.read_csv(directory+r"\pos2017.csv")
+
+short_term_hos_2017=pos2017[pos2017['PRVDR_CTGRY_CD']==1]
+short_term_hos_2017=short_term_hos_2017[short_term_hos_2017['PRVDR_CTGRY_SBTYP_CD']==1]
+short_term_hos_2017['year']=2017
+print(len(short_term_hos_2017))
+```
+
+```{python}
+# import and subset pos2018
+pos2018=pd.read_csv(directory+r"\pos2018.csv")
+
+short_term_hos_2018=pos2018[pos2018['PRVDR_CTGRY_CD']==1]
+short_term_hos_2018=short_term_hos_2018[short_term_hos_2018['PRVDR_CTGRY_SBTYP_CD']==1]
+short_term_hos_2018['year']=2018
+print(len(short_term_hos_2018))
+```
+
+```{python}
+# import and subset pos2019
+pos2019=pd.read_csv(directory+r"\pos2019.csv")
+
+short_term_hos_2019=pos2019[pos2019['PRVDR_CTGRY_CD']==1]
+short_term_hos_2019=short_term_hos_2019[short_term_hos_2019['PRVDR_CTGRY_SBTYP_CD']==1]
+short_term_hos_2019['year']=2019
+print(len(short_term_hos_2019))
+```
+
+There are 7260 short term hospitals in the 2017 dataset. There are 7277 short term hospitals in the 2018 dataset. There are 7303 short term hospitals in the 2019 dataset. 
+
+
+```{python}
+full_df=pd.concat([short_term_hos_2016,short_term_hos_2017,short_term_hos_2018,short_term_hos_2019])
+```
+
+```{python}
+alt.data_transformers.disable_max_rows()
+plot_1_3=alt.Chart(full_df, title="Number of Short Term Hospitals by Year").mark_bar().encode(
+    alt.X('year:O'),
+    alt.Y('count(FAC_NAME):Q')
+)
+plot_1_3
+```
+4. 
+    a.
+```{python}
+#learned about the drop_duplicates function 
+#https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.drop_duplicates.html
+unique_nums2016=short_term_hos_2016.drop_duplicates(subset='PRVDR_NUM', keep='first')
+# check if duplicates were dropped
+unique_nums2016.groupby('PRVDR_NUM').size().head(15)
+unique_nums2017=full_df[full_df['year']==2017].drop_duplicates(subset='PRVDR_NUM', keep='first')
+unique_nums2018=full_df[full_df['year']==2018].drop_duplicates(subset='PRVDR_NUM', keep='first')
+unique_nums2019=full_df[full_df['year']==2019].drop_duplicates(subset='PRVDR_NUM', keep='first')
+full_unique_nums=pd.concat([unique_nums2016, unique_nums2017, unique_nums2018, unique_nums2019])
+```
+```{python}
+unique_hos_plot=alt.Chart(full_unique_nums).mark_bar().encode(
+    alt.X('year:O').title("Year"),
+    alt.Y('count(FAC_NAME):Q').title("Number of Observations")
+)
+unique_hos_plot
+```
+    b.
+
+The unique provider number plot looks almost identical to the plot before filtering out duplicates. This suggests that almost all of the hospitals already had a unique provider number. 
+
+## Identify hospital closures in POS file (15 pts) (*)
+
+1. 
+
+```{python}
+list_active_hospitals_2016 = full_unique_nums[
+    (full_unique_nums['PRVDR_CTGRY_CD'] == 1) & 
+    (full_unique_nums['PRVDR_CTGRY_SBTYP_CD'] == 1) & 
+    (full_unique_nums['year'] == 2016)
+]
+
+providers_active_2016 = list_active_hospitals_2016['FAC_NAME'].unique()
+
+closure_records = []
+
+years_to_check = [2017, 2018, 2019]
+
+for provider in providers_active_2016:
+    is_closed = True
+    year_of_close = None
+    
+    for year in years_to_check:
+        yearly_data = full_unique_nums[
+            (full_unique_nums['FAC_NAME'] == provider) & 
+            (full_unique_nums['PRVDR_CTGRY_CD'] == 1) & 
+            (full_unique_nums['PRVDR_CTGRY_SBTYP_CD'] == 1) & 
+            (full_unique_nums['year'] == year)
+        ]
+        
+        if not yearly_data.empty and 'CLOSED' not in yearly_data['FAC_NAME'].values[0]:
+            is_closed = False
+            break
+        elif not yearly_data.empty:
+            year_of_close = year
+    
+    if is_closed:
+        hospital_info = list_active_hospitals_2016[list_active_hospitals_2016['FAC_NAME'] == provider].iloc[0]
+        closure_records.append({
+            'FAC_NAME': hospital_info['FAC_NAME'],
+            'ZIP_CD': hospital_info['ZIP_CD'],
+            'closure_year': year_of_close
+        })
+closures_data = pd.DataFrame(closure_records)
+
+total_closures_by_2019 = closures_data.shape[0]
+print(f"Total suspected closures by 2019: {total_closures_by_2019}")
+```
+2. 
+
+```{python}
+sorted_closures_data = closures_data.sort_values(by='FAC_NAME')[['FAC_NAME', 'closure_year']]
+
+sorted_closures_data.head(10)
+
+```
+
+3. 
+    a.
+```{python}
+active_hospitals_by_zip_year = full_df[(full_df['PGM_TRMNTN_CD'] == 0) & 
+                                       (full_df['PRVDR_CTGRY_CD'] == 1) & 
+                                       (full_df['PRVDR_CTGRY_SBTYP_CD'] == 1)]
+active_ones = active_hospitals_by_zip_year.groupby(['ZIP_CD', 'year']).size().reset_index(name='active_count')
+
+closures_data = closures_data.merge(active_ones, left_on=['ZIP_CD', 'closure_year'], right_on=['ZIP_CD', 'year'], how='left')
+closures_data = closures_data.rename(columns={'active_count': 'closure_year_active_count'})
+
+closures_data = closures_data.merge(
+    active_ones,
+    left_on=['ZIP_CD', 'closure_year'],
+    right_on=['ZIP_CD', 'year'],
+    suffixes=('', '_next'),
+    how='left'
+)
+closures_data = closures_data.rename(columns={'active_count': 'next_year_active_count'})
+
+closures_data['potential_acquisition_merger'] = closures_data['next_year_active_count'] >= closures_data['closure_year_active_count']
+
+potential_acquisition_mergers = closures_data[closures_data['potential_acquisition_merger']].copy()
+potential_acquisition_merger_count = potential_acquisition_mergers.shape[0]
+
+print(f"Number of hospitals potentially closed due to mergers/acquisitions: {potential_acquisition_merger_count}")
+
+```
+
+    b.
+```{python}
+corrected_closures_data = closures_data[~closures_data['potential_acquisition_merger']]
+
+remaining_closures_count = corrected_closures_data.shape[0]
+print(f"Number of suspected closures after correcting for mergers/acquisitions: {remaining_closures_count}")
+
+```
+
+    c.
+```{python}
+sorted_corrected_closures = corrected_closures_data.sort_values(by='FAC_NAME')[['FAC_NAME', 'ZIP_CD', 'closure_year']]
+
+sorted_corrected_closures.head(10)
+
+```
+
+## Download Census zip code shapefile (10 pt) 
+
+1. 
+    a. 
+    The file types are .dbf, .prj, .shp, .shx, and .xml.
+    The .dbf file has attribute information 
+    The .prj file describes the Coordinate Reference System.
+    The .shp has feature geometrics.
+    The .shx has a positional index. 
+    The .xml file has details on where the data was obtained, and how often it is updated, and other notes on data use. 
+
+
+    b. 
+    The .dbf file is 6,275 KB
+    The .prj file is 1 KB
+    The .shp file is 817,915 KB
+    The .shx file is 259 KB
+    The .xml file is 16 KB
+
+2. 
+
+```{python}
+import geopandas as gpd
+census_data=gpd.read_file(directory+r"\gz_2010_us_860_00_500k.shp")
+```
+
+```{python}
+census_data.head()
+# used ChatGPT to Debug and filter to multipel prefixes. 
+#prompt "How can I filter to multiple startswith strings"
+prefixes=('75', '76', '77', '78', '79')
+census_data['texas']=census_data['ZCTA5'].map(lambda x: 1 if any(str(x).startswith(prefix) for prefix in prefixes)else 0)
+texas_data=census_data[census_data['texas']==1]
+```
+
+```{python}
+geometry=texas_data[['ZCTA5', 'geometry']]
+geometry.dtypes
+geometry=geometry.dropna()
+geometry['ZCTA5']=pd.to_numeric(geometry['ZCTA5'])
+geometry.dtypes
+```
+#check geometry 
+```{python}
+import matplotlib.pyplot as plt
+geometry.plot(facecolor='none').set_axis_off()
+
+```
+
+```{python}
+counts=short_term_hos_2016['ZIP_CD'].value_counts()
+counts=counts.reset_index()
+counts['ZIP_CD']=counts['ZIP_CD'].map(int)
+counts.dtypes
+```
+
+
+```{python}
+#merge
+merge=geometry.merge(counts, left_on='ZCTA5', right_on='ZIP_CD', how='left')
+merge=merge.fillna(0)
+merge=gpd.GeoDataFrame(merge, geometry='geometry')
+```
+
+```{python}
+#plot
+plot=merge.plot()
+```
+
+```{python}
+plot=merge.plot(column='count', legend=True).set_axis_off()
+```
+
+## Calculate zip code’s distance to the nearest hospital (20 pts) (*)
+
+1. 
+
+```{python}
+census_data
+zips_all_centroids=census_data
+zips_all_centroids['centroid']=zips_all_centroids.centroid
+zips_all_centroids.shape
+zips_all_centroids.head()
+```
+The resulting dataframe as 33,120 rows and 8 columns. 
+
+The columns are
+GEO_ID: Geographic Identifier- Fully Concatenated Geographic Code
+ZCTA5: Five digit zipcode
+NAME: Base Name with Translated Legal/Statistical Area Description (the same as ZCTA5)
+LSAD: Legal Statistical Area Description
+CENSUSAREA:
+geometry: the polygon or multipolygon for each zipcode
+texax: The indicator variable I created that shows 1 if the zipcode is in texas and 0 otherwise
+centroid: the centroid of the zipcode
+Source for column definitions: https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_attribute_glossary.html 
+
+2. 
+
+```{python}
+zips_texas_centroids=zips_all_centroids[zips_all_centroids['texas']==1]
+```
+Bordering States
+NM: 870-884
+OK:73-34
+AK:716-729
+LA: 700-715
+
+```{python}
+border_prefixes=('870', '871', '872', '873', '874', '875', '876', '877', '878', '879', '880', '881', '882', '883', '884', '73', '74', '716', '717', '718', '719', '720', '721', '722', '723','724','725','726','728','729', '700', '701','702','703','704','705','706','707','708','709','710','711','712','713','714','715')
+border_prefixes=border_prefixes+prefixes
+zips_all_centroids['border']=zips_all_centroids['ZCTA5'].map(lambda x:1 if any(str(x).startswith(prefix)for prefix in border_prefixes)else 0)
+zips_texas_borderstates_centroids=zips_all_centroids[zips_all_centroids['border']==1]
+```
+
+```{python}
+unique_nums2016=short_term_hos_2016.drop_duplicates(subset='PRVDR_NUM', keep='first')
+```
+
+```{python}
+unique_zips_texas_centroids=zips_texas_centroids.drop_duplicates(subset='ZCTA5', keep='first')
+unique_zips_texas_borderstates_centroids=zips_texas_borderstates_centroids.drop_duplicates(subset='ZCTA5', keep='first')
+unique_zips_texas_centroids.shape
+unique_zips_texas_borderstates_centroids.shape
+```
+There are 1935 unique zipcodes in the Texas subset. 
+There are 4018 unique zipcodes in the Texas and bordering states subset. 
+
+3. 
+
+```{python}
+short_term_hos_2016['ZIP_CD']=short_term_hos_2016['ZIP_CD'].map(int)
+zips_texas_borderstates_centroids['ZCTA5']=pd.to_numeric(zips_texas_borderstates_centroids['ZCTA5'])
+zips_withhospital_centroids=short_term_hos_2016.merge(zips_texas_borderstates_centroids, left_on='ZIP_CD', right_on='ZCTA5', how='left')
+zips_withhospital_centroids=gpd.GeoDataFrame(zips_withhospital_centroids,geometry='centroid')
+```
+I choose to use a left merge so that the dataframe would only keep zipcodes contianing hospitals (the pos file was on the left). I merged on the zipcode variable ZIP_CD on the left and ZCTA5 on the right. 
+4. 
+    a.
+    
+```{python}
+top_ten=zips_texas_centroids.head(10)
+zips_texas_centroids.set_geometry('centroid')
+```
+
+```{python}
+import time
+start_time=time.time()
+ten_join=gpd.sjoin_nearest(
+    top_ten,
+    zips_withhospital_centroids,
+    how='left',
+    distance_col='distance'
+)
+end_time=time.time()
+```
+
+```{python}
+difference=end_time-start_time
+print(difference)
+```
+The merge took 0.034 ms
+
+```{python}
+total_time=(1935/10)*difference
+print(total_time)
+```
+I estimate it will take 6.53ms to run the entire procedure. 
+    b.
+
+```{python}
+start=time.time()
+join=gpd.sjoin_nearest(
+    zips_texas_centroids,
+    zips_withhospital_centroids,
+    how='left',
+    distance_col='distance'
+)
+end=time.time()
+```
+
+```{python}
+diff=end-start
+print(diff)
+```
+The actual time it took was 0.889ms which is considerably less than the estimate. 
+
+c. The unit is degrees. 
+
+```{python}
+def degrees_to_miles(num):
+    conversion=num*69
+    return conversion
+```
+5. 
+    a.
+
+```{python}
+print(join['distance'])
+```
+This distance calculation is in degrees. 
+    b.
+
+```{python}
+join['miles']=join['distance'].map(degrees_to_miles)
+ten_join['miles']=ten_join['distance'].map(degrees_to_miles)
+join['miles'].mean()
+```
+The average distance to a hospital in miles from each 4.34. This seems very short.
+
+    c.
+
+```{python}
+join.plot().set_axis_off()
+for index, row in join.iterrows():
+    centroid=row['centroid']
+    plt.annotate(text=row['miles'], xy=(centroid.x, centroid.y),
+    ha='center', fontsize=5)
+
+plt.show()
+```
+If we map all the distance for all zipcodes then the map becomes unreadable because the text layers over each other. So, we decided to test using just the first ten zipcodes from zips_texas_centroids. The resulting graph is below. It only shows a portion of the zipcodes in Texas but the labels are readable. 
+```{python}
+ten_join.plot().set_axis_off()
+for index, row in ten_join.iterrows():
+    centroid=row['centroid']
+    plt.annotate(text=row['miles'], xy=(centroid.x, centroid.y),
+    ha='center', fontsize=5)
+
+plt.show()
+```
+
+## Effects of closures on access in Texas (15 pts)
+
+1. 
+
+```{python}
+sorted_corrected_closures.head()
+closures_by_zip=sorted_corrected_closures.groupby('ZIP_CD').size()
+closures_by_zip=closures_by_zip.reset_index()
+closures_by_zip.head()
+
+closures_by_zip['texas']=closures_by_zip['ZIP_CD'].map(lambda x:1 if any(str(x).startswith(prefix)for prefix in prefixes)else 0)
+closures_by_zip_texas=closures_by_zip[closures_by_zip['texas']==1]
+
+closures_by_zip_texas.columns=['ZIP_CD', 'Closures', 'Texas']
+print(closures_by_zip_texas)
+```
+
+2. 
+
+```{python}
+closures_by_zip_texas.head()
+closures_by_zip_texas['ZIP_CD']=closures_by_zip_texas['ZIP_CD'].map(int)
+closures_by_zip_texas.dtypes
+closures_by_zip_texas.head()
+```
+
+```{python}
+merge_closures=geometry.merge(closures_by_zip_texas, left_on='ZCTA5', right_on='ZIP_CD', how='left')
+merge_closures=gpd.GeoDataFrame(merge_closures, geometry='geometry')
+merge_closures['ZIP_CD']=merge_closures['ZCTA5']
+merge_closures=merge_closures.fillna(0)
+merge_closures.head()
+
+
+```
+
+```{python}
+closure_plot=merge_closures.plot(column='Closures',vmin=0, legend=True).set_axis_off()
+```
+Visually it looks like there are 8 affected zipcodes in Texas. 
+
+```{python}
+affected=merge_closures[merge_closures['Closures']==1]
+```
+There are 10 affected zipdoes in Texas. 
+3. 
+
+```{python}
+#learned that 1 degree is approximately equal to 69 miles
+#https://www.google.com/search?q=convert+degrees+to+miles&rlz=1C1VDKB_enUS1129US1129&oq=convert+degrees+to+miles&gs_lcrp=EgZjaHJvbWUyCQgAEEUYORiABDIICAEQABgWGB4yCAgCEAAYFhgeMggIAxAAGBYYHjIICAQQABgWGB4yCAgFEAAYFhgeMggIBhAAGBYYHjIICAcQABgWGB4yCAgIEAAYFhgeMggICRAAGBYYHtIBCDUxMjhqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8
+distance=10/69
+affected_buffer=affected.copy()
+affected_buffer['geometry']= affected_buffer.geometry.buffer(distance)
+affected_buffer.plot().set_axis_off()
+```
+
+```{python}
+indirectly_affected=gpd.sjoin(merge_closures, affected_buffer, how='inner', predicate='intersects')
+indirectly_affected.plot().set_axis_off()
+```
+
+```{python}
+len(indirectly_affected)
+```
+216 zipcodes were indirectly affected. 
+4. 
+
+```{python}
+#used ChatGPT to debug prompt "merge_closures['status']=merge_closures['ZCTA5'].map(lambda x: 'affected' if x in affected['ZCTA5'] elif x in indirectly_affected[ZCTA5_left] 'indirectly affected' else 'unaffected')"
+
+merge_closures['status'] = merge_closures['ZCTA5'].map(
+    lambda x: 'affected' if x in affected['ZCTA5'].values 
+    else ('indirectly affected' if x in indirectly_affected['ZCTA5_left'].values 
+          else 'unaffected')
+)
+merge_closures.head()
+```
+
+```{python}
+merge_closures.plot(column='status', legend=True).set_axis_off()
+```
+## Reflecting on the exercise (10 pts) 
+Partner 1:
+While it makes sense to suspect that if the number of active hospitals didn't decrease, then the hospital was involved in a merger, this doesn't necessarily have to be the case. A hospital's closure could be announced some time before the closure actually takes place, and a new hospital could come in to fill demand. A new hospital could have come in to the zipcode at the same time that another closed, but with the first pass method this would be interpretted as the old hospital being aquired in a merger not a new one taking it's place. 
+
+Once we have the list of suspected closures, I think it would be worth the time to check the facilitiy names of before and after the suspected closures to see if there are names that are slightly changed. Ex: OSF St. Mary to Carle St. Mary. Since there is a relatively short list of hospitals suspected of being involved in a merger it wouldn't take too much time to just Google the hospital individually to see if there are any reports of a closure or merger.
+
+
+Partner 2:
+The existing approach to pinpoint ZIP codes impacted by hospital shutdowns, which relies on the cessation of hospital operations between 2016 and 2019, offers a fundamental insight into access alterations. Nonetheless, it simplifies the effect on healthcare availability by assuming all closures are the same and not considering variables like the number of hospitals in each ZIP code, distance to hospitals in adjacent ZIP codes, or population density.
+
+Way to enhance this is to take into account the number of hospitals within each ZIP code. A closure in a ZIP code containing many hospitals might not have as much of an effect as a closure in an area with just one hospital. Incorporate nearby ZIP codes to evaluate the impact of closures on access in neighboring areas, since patients may go to other ZIP codes for healthcare. Integrate population statistics to more accurately represent the amount of individuals impacted by closures, particularly in heavily populated regions. These enhancements would offer a more detailed understanding of the impact of hospital closures on healthcare accessibility within specific ZIP codes.

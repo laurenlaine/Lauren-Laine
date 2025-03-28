@@ -1,0 +1,243 @@
+---
+title: "Final Project"
+author: "Lauren Laine"
+date: "2024-05-06" 
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ipumsr)
+library(tidyverse)
+
+#setwd("Documents/Harris/Spring 2024/Workplace and Family Policy/Final Project/")
+ddi<-read_ipums_ddi("usa_00011.xml")
+data<-read_ipums_micro(ddi)
+```
+```{r}
+
+ne_fips<-c(9, 23, 25, 33, 44, 50)
+
+new_england<-data%>%
+  filter(STATEFIP %in% ne_fips)
+
+new_england<-new_england%>%
+  mutate(STATE=case_when(STATEFIP==9~"CT",
+                         STATEFIP==23~"ME",
+                         STATEFIP==25~"MA",
+                         STATEFIP==33~"NH",
+                         STATEFIP==44~"RI",
+                         STATEFIP==50~"VT"))
+
+
+new_england<-new_england%>%
+  mutate(any_dis=case_when(DIFFREM==2~1,
+                           DIFFPHYS==2~1,
+                           DIFFMOB==2~1,
+                           DIFFCARE==2~1,
+                           DIFFSENS==2~1,
+                           .default=0))
+new_england<-new_england%>%
+  mutate(in_lf=case_when(LABFORCE==2~1,
+                         LABFORCE==1~0),
+         emp_status=case_when(EMPSTAT==1~1,
+                              EMPSTAT==2~0),
+         female=case_when(SEX==1~0,
+                          SEX==2~1,
+                          SEX==9~NaN),
+         age2=AGE*AGE)
+
+new_england<-new_england%>%
+   mutate(treated=case_when(STATE=="ME"& YEAR>=2020~1,
+                           STATE=="NH"& YEAR>=2015~1,
+                           STATE=="VT"& YEAR>=2002~1,
+                           .default = 0))
+
+
+emp_rates_by_dis=new_england%>%
+  filter(in_lf==1)%>%
+  group_by(any_dis, STATE)%>%
+  summarise(avg_emp=mean(emp_status))
+
+
+with_dis<-new_england%>%
+  filter(any_dis==1)
+
+with_dis_after<-with_dis%>%
+  filter(YEAR>2002)
+
+
+state_groups=factor(with_dis_after$STATE)
+periods=factor(with_dis_after$YEAR)
+
+
+employment=lm(emp_status~treated+female+RACED+AGE+age2+EDUCD+state_groups+periods, data=with_dis_after)
+employment_int=lm(emp_status~treated+female+RACED+AGE+age2+EDUCD+state_groups+periods+(state_groups*YEAR), data=with_dis_after)
+
+total_income=lm(INCTOT~treated+female+RACED+AGE+age2+EDUCD+state_groups+periods, data=with_dis_after)
+total_income_int=lm(INCTOT~treated+female+RACED+AGE+age2+EDUCD+(state_groups*YEAR)+state_groups+periods, data=with_dis_after)
+
+wage=lm(INCWAGE~treated+female+RACED+AGE+age2+EDUCD+state_groups+periods, data=with_dis_after)
+wage_int=lm(INCWAGE~treated+female+RACED+AGE+age2+EDUCD+(state_groups*YEAR)+state_groups+periods, data=with_dis_after)
+
+library(stargazer)
+stargazer(employment,employment_int, type="text", 
+          title="Employment Regression Results: Any Disability", align=TRUE, keep=1:7,
+          model.names =FALSE, column.labels = c('Base', 'Interaction'))
+
+stargazer(total_income, total_income_int, wage, wage_int, type="text", 
+          title="Income and Wage Regression Results: Any Disability", align=TRUE, keep=1:7,
+          model.names =FALSE, column.labels = c('Base', 'Interaction','Base', 'Interaction'))
+```
+
+```{r}
+by_year<-with_dis%>%
+  group_by(YEAR, STATE)%>%
+  filter(in_lf==1)%>%
+  summarise(labor_force=sum(in_lf),
+            employment=sum(emp_status),
+            emp_rate=employment/labor_force,
+            emp_status=mean(emp_status))
+
+pre_period<-by_year%>%
+  filter(YEAR<=2002)
+
+
+```
+
+```{r}
+ggplot(data=pre_period,
+       aes(x=YEAR, y=emp_rate, group=STATE, color=STATE))+
+  geom_line()+
+   ylab("Employment Rate for Workers with Disabilities")+
+  ggtitle("Employment Rate for Workers with Disabilities by State Pre-Period")
+ggsave("pre_period.png")
+
+
+```
+
+
+```{r}
+ggplot(data=by_year,
+       aes(x=YEAR, y=emp_rate, group=STATE, color=STATE))+
+  geom_line()+
+  geom_vline(xintercept=2002, color="pink")+
+  geom_vline(xintercept=2015, color="lightblue")+
+  geom_vline(xintercept=2020, color="green")+
+  geom_vline(xintercept=2022, color="skyblue")+
+  ylab("Employment Rate for Workers with Disabilities")+
+  ggtitle("Employment Rate for Workers with Disabilities by State 2000-2022")
+ggsave("emp_rate_by_state.png")
+```
+
+
+```{r}
+NE_emp_wage<-new_england%>%
+  filter(in_lf==1)%>%
+  group_by(YEAR, any_dis)%>%
+  summarise(lf=sum(in_lf),
+            emp=sum(emp_status),
+            emp_rate=(emp/lf),
+            avg_wage=mean(INCWAGE))%>%
+  mutate(disability=case_when(any_dis==1~'disability reported',
+                              any_dis==0~'no disability reported'))
+
+ggplot(NE_emp_wage,
+       aes(y=emp_rate, x=YEAR, group=disability, color=disability, linetype=disability))+
+  geom_line()+
+  ylab('Employment Rate')+
+  ggtitle('New England Employment Rates over Time by Reported Disability')
+ggsave("emp_rates_by_dis.png")
+```
+```{r}
+ggplot(NE_emp_wage,
+       aes(y=avg_wage, x=YEAR, group=disability, color=disability, linetype=disability))+
+  geom_line()+
+  ylab('Average Wage Income')+
+  ggtitle('New England Average Wages over Time by Reported Disability')
+ggsave("avg_wages.png")
+```
+```{r}
+with_types<-new_england%>%
+  mutate(type_of_dis=case_when(DIFFREM==2~'REM',
+                           DIFFPHYS==2~'PHYS',
+                           DIFFMOB==2~'MOB',
+                           DIFFCARE==2~'CARE',
+                           DIFFSENS==2~'SENS',
+                           .default='NONE'))
+```
+
+```{r}
+type_ep_wages<-with_types%>%
+  filter(in_lf==1)%>%
+  filter(any_dis==1)%>%
+  group_by(YEAR, type_of_dis)%>%
+  summarise(lf=sum(in_lf),
+            emp=sum(emp_status),
+            emp_rate=(emp/lf),
+            avg_wage=mean(INCWAGE))%>%
+  mutate(disability=case_when(type_of_dis=='REM'~'REM',
+                              type_of_dis=='PHYS'~'PHYS',
+                              type_of_dis=='MOB'~'MOB',
+                              type_of_dis=='CARE'~'CARE',
+                              type_of_dis=='SENS'~'SENS'))
+```
+```{r}
+ggplot(type_ep_wages,
+       aes(y=avg_wage, x=YEAR, group=disability, color=disability))+
+  geom_line()+
+  ylab('Average Wage Income')+
+  ggtitle('New England Average Wages over Time by Reported Disability')
+ggsave("wages_by_dis.png")
+```
+```{r}
+cognitive<-with_types%>%
+  filter(type_of_dis=='REM')
+```
+
+```{r}
+states=factor(cognitive$STATE)
+years=factor(cognitive$YEAR)
+
+emp_cog=lm(emp_status~treated+female+RACED+AGE+age2+EDUCD+states+years, data=cognitive)
+emp_int_cog=lm(emp_status~treated+female+RACED+AGE+age2+EDUCD+(states*YEAR)+states+years, data=cognitive)
+stargazer( emp_cog, emp_int_cog, type="text", 
+          title="Employment Regression Results: Cognitive Disabilities Only", align=TRUE, keep=1:7,
+          model.names =FALSE, column.labels = c('Base', 'Interaction'))
+
+
+wage_cog=lm(INCWAGE~treated+female+RACED+AGE+age2+EDUCD+states+years, data=cognitive)
+wage_int_cog=lm(INCWAGE~treated+female+RACED+AGE+age2+EDUCD+(states*YEAR)+states+years, data=cognitive)
+stargazer( wage_cog, wage_int_cog, type="text", 
+          title="Wage Regression Results: Cognitive Disabilities Only", align=TRUE, keep=1:7,
+          model.names =FALSE, column.labels = c('Base', 'Interaction'))
+
+```
+```{r}
+hs_or_less<-with_dis_after%>%
+  filter(EDUCD<=062)
+
+s=factor(hs_or_less$STATE)
+y=factor(hs_or_less$YEAR)
+
+
+emp_edu=lm(emp_status~treated+female+RACED+AGE+age2+EDUCD+s+y, data=hs_or_less)
+emp_int_edu=lm(emp_status~treated+female+RACED+AGE+age2+EDUCD+(s*YEAR)+s+y, data=hs_or_less)
+stargazer(emp_edu, emp_int_edu, type="text", 
+          title="Employment Regression Results:HS or Less", align=TRUE, keep=1:7,
+          model.names =FALSE, column.labels = c('Base', 'Interaction'))
+
+wage_edu=lm(INCWAGE~treated+female+RACED+AGE+age2+EDUCD+s+y, data=hs_or_less)
+wage_int_edu=lm(INCWAGE~treated+female+RACED+AGE+age2+EDUCD+(s*YEAR)+s+y, data=hs_or_less)
+stargazer(wage_edu, wage_int_edu, type="text", 
+          title="Wage Regression Results:HS or Less", align=TRUE, keep=1:7,
+          model.names =FALSE, column.labels = c('Base', 'Interaction'))
+
+```
+
+```
+
+
