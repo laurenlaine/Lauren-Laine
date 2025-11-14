@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 ```{python}
 #Set with your directory file path
-directory=r"C:\Users\laine\OneDrive\Documents\GitHub\Lauren-Laine\Data"
+directory=r"C:\Users\laine\OneDrive\Documents\GitHub\Lauren-Laine\Python\Data"
 pos2016=pd.read_csv(directory+r"\pos2016.csv")
 ```
 
@@ -59,6 +59,7 @@ merge=gpd.GeoDataFrame(merge, geometry='geometry')
 
 ```{python}
 plot=merge.plot(column='count', legend=True).set_axis_off()
+plt.title('Number of Short Term Hospitals in Texas by ZCTA/ Zip Code')
 plot
 ```
 
