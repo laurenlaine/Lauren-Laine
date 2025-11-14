@@ -58,6 +58,7 @@ merge=gpd.GeoDataFrame(merge, geometry='geometry')
 ```
 
 ```{python}
+#plot choropleth
 plot=merge.plot(column='count', legend=True).set_axis_off()
 plt.title('Number of Short Term Hospitals in Texas by ZCTA/ Zip Code')
 plot
