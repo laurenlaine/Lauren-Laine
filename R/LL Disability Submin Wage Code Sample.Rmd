@@ -15,15 +15,12 @@ library(ipumsr)
 library(tidyverse)
 
 #setwd("C:/Users/laine/OneDrive/Documents/GitHub/Lauren-Laine/R/Final Project")
-#ddi <- read_ipums_ddi("C:/Users/laine/OneDrive/Documents/GitHub/Lauren-Laine/R/Data/usa_00006.xml")
-#data <- read_ipums_micro(ddi)
-
 ```
-
+*** To use csv, unzip file and read in here***
 ```{r}
-library(tidyverse)
+new_england<-read.csv("~/GitHub/Lauren-Laine/R/Data/new_england.csv")
+head(new_england)
 ```
-
 
 ```{r}
 
@@ -40,16 +37,6 @@ new_england<-new_england%>%
                          STATEFIP==44~"RI",
                          STATEFIP==50~"VT"))
 
-```
-
-```{r}
-write.csv(new_england, "~/GitHub/Lauren-Laine/R/Data/new_england.csv")
-```
-
-*** To use csv, unzip file and read in here***
-```{r}
-new_england<-read.csv("~/GitHub/Lauren-Laine/R/Data/new_england.csv")
-head(new_england)
 ```
 
 
